@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  last_login    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  platformPrompts PlatformPrompt[]
+  generatedContents GeneratedContent[]
+  platformAuths PlatformAuth[]
+  customPrompts CustomPrompt[]
+  contentRecords ContentRecord[]
+}
+
+// 平台提示词模型
+model PlatformPrompt {
+  id        String   @id @default(cuid())
+  platform  String   // 平台名称，如：twitter, xiaohongshu, zhihu, wechat
+  prompt    String   // 自定义提示词
+  userId    String   // 关联的用户ID
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, platform])
+}
+
+// 生成内容模型
+model GeneratedContent {
+  id        String   @id @default(cuid())
+  title     String   // 内容标题
+  content   String   // 生成的内容
+  platform  String   // 目标平台
+  userId    String   // 关联的用户ID
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customPromptId String? // 使用的自定义提示词ID
+  customPrompt  CustomPrompt? @relation(fields: [customPromptId], references: [id])
+  contentId String   // 保持向后兼容
+  contentRecordId String // 关联的内容记录ID，必填
+  contentRecord ContentRecord @relation(fields: [contentRecordId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, platform])
+  @@index([contentRecordId])
+  @@map("generated_contents")
+}
+
+// 平台授权模型
+model PlatformAuth {
+  id          String     @id @default(cuid())
+  userId      String
+  platform    String
+  accessToken String
+  refreshToken String?
+  expiry      DateTime?
+  metadata    String?    // JSON存储额外的平台特定数据
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("platform_auth")
+}
+
+// 自定义提示词模型
+model CustomPrompt {
+  id           String     @id @default(cuid())
+  userId       String
+  platform     String
+  name         String
+  systemPrompt String
+  userPrompt   String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contents     GeneratedContent[]
+
+  @@index([userId, platform])
+  @@map("custom_prompts")
+}
+
+// 内容记录模型
+model ContentRecord {
+  id              String     @id @default(cuid())
+  userId          String
+  title           String
+  originalContent String?    // 去掉 @db.Text，sqlite不支持此类型
+  source          String?    // 文件来源，例如: 上传文件，URL，手动输入
+  fileName        String?
+  fileType        String?
+  model           String     // 使用的AI模型
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generatedContents GeneratedContent[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("content_records")
+}
+
+// 发布记录模型
+model PublishRecord {
+  id              String     @id @default(cuid())
+  userId          String
+  platform        String
+  contentId       String     // 关联到GeneratedContent的ID
+  status          String     // 成功, 失败
+  error           String?
+  platformPostId  String?    // 平台上的帖子ID
+  platformPostUrl String?    // 平台上的帖子URL
+  createdAt       DateTime   @default(now())
+  
+  @@index([userId, platform, createdAt(sort: Desc)])
+  @@map("publish_records")
+} 
