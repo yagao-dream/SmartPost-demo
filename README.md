@@ -140,8 +140,10 @@ yarn install
 ```
 
 3. 配置环境变量
-```bash
-cp .env.example .env
+```
+建一个.env 环境变量文件，复制以下字段到环境变量文件中
+DATABASE_URL="file:./dev.db"
+NEXT_PUBLIC_OPENROUTER_API_KEY=""   替换OpenRouter API密钥，用于访问AI模型服务
 ```
 
 4. 启动开发服务器
@@ -155,12 +157,15 @@ yarn dev
 
 必要的环境变量包括：
 - `DATABASE_URL`: 数据库连接地址
+- `NEXT_PUBLIC_OPENROUTER_API_KEY`: OpenRouter API密钥，用于访问AI模型服务
+
+重置密码：
 - `JWT_SECRET`: JWT 密钥
 - `SMTP_HOST`: 邮件服务器地址
 - `SMTP_PORT`: 邮件服务器端口
 - `SMTP_USER`: 邮件账号
 - `SMTP_PASS`: 邮件密码
-- `NEXT_PUBLIC_OPENROUTER_API_KEY`: OpenRouter API密钥，用于访问AI模型服务
+
 
 ## 🤝 贡献指南
 
